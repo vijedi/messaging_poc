@@ -47,4 +47,18 @@
     <bean id="amqpConsumer" class="net.vijedi.messaging.rabbit.SpringAmqpConsumer">
         <property name="template" ref="amqpTemplate"/>
     </bean>
+
+    <bean id="statsMessageHandler" class="net.vijedi.messaging.rabbit.StatMessageUpdateHandler" />
+    
+    <bean id="statsMessageConsumer" class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
+        <property name="connectionFactory" ref="amqpConnectionFactory" />
+        <property name="queueName" value="${rabbit.stat.update.queue}" />
+        <property name="messageListener">
+            <bean class="org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter">
+                <property name="delegate" ref="statsMessageHandler"/>
+                <property name="defaultListenerMethod" value="handleMessage"/>
+                <property name="messageConverter" ref="jsonMessageConverter"/>
+            </bean>
+        </property>
+    </bean>
 </beans>

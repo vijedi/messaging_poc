@@ -15,8 +15,8 @@ public class SpringAmqpConsumer {
 
     public static void main(String[] args) {
         ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext-rabbit.xml");
-        SpringAmqpConsumer consumer = context.getBean(SpringAmqpConsumer.class);
-        consumer.consume();
+//        SpringAmqpConsumer consumer = context.getBean(SpringAmqpConsumer.class);
+//        consumer.consume();
     }
 
     private void consume() {

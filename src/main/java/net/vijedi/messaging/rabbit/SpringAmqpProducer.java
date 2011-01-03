@@ -28,15 +28,22 @@ public class SpringAmqpProducer {
     }
 
     private void produce() {
-        StatUpdateMessage message = new StatUpdateMessage(
-                producerId,
-                sequence,
-                sequence + 1,
-                "testing message"
-        );
-        template.convertAndSend(message);
+        while (true) {
+            StatUpdateMessage message = new StatUpdateMessage(
+                    producerId,
+                    sequence,
+                    sequence + 1,
+                    "testing message"
+            );
+            template.convertAndSend(message);
 
-        System.out.println("Sent message: " + message);
+            System.out.println("Sent message: " + message);
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                 System.out.println(e.getMessage());
+            }
+        }
     }
 
     public void setTemplate(AmqpTemplate template) {
