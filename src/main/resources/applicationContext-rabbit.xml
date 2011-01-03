@@ -61,4 +61,15 @@
             </bean>
         </property>
     </bean>
+
+    <bean id="statsExchange" class="org.springframework.amqp.core.FanoutExchange">
+        <constructor-arg value="statsExchange" />
+        <constructor-arg value="true" />
+        <constructor-arg value="false" />
+    </bean>
+
+    <bean id="statsBinding" class="org.springframework.amqp.core.Binding">
+        <constructor-arg ref="statUpdateQueue" />
+        <constructor-arg ref="statsExchange" />
+    </bean>
 </beans>

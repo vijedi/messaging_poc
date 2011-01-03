@@ -1,6 +1,5 @@
 package net.vijedi.messaging.rabbit;
 
-import net.vijedi.messages.StatUpdateMessage;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -15,16 +14,6 @@ public class SpringAmqpConsumer {
 
     public static void main(String[] args) {
         ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext-rabbit.xml");
-//        SpringAmqpConsumer consumer = context.getBean(SpringAmqpConsumer.class);
-//        consumer.consume();
     }
 
-    private void consume() {
-        StatUpdateMessage message = (StatUpdateMessage) template.receiveAndConvert();
-        System.out.println("Received: " + message);
-    }
-
-    public void setTemplate(RabbitTemplate template) {
-        this.template = template;
-    }
 }
