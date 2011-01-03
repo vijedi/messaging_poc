@@ -17,6 +17,9 @@
         </property>
     </bean>
 
+    <bean id="instanceUUID" class="java.util.UUID" factory-method="randomUUID" />
+    <bean id="instanceId" factory-bean="instanceUUID" factory-method="toString" />
+    
     <bean id="jsonMessageConverter" class="org.springframework.amqp.support.converter.JsonMessageConverter"/>
 
     <bean id="amqpConnectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
@@ -25,10 +28,10 @@
         <property name="password" value="${rabbit.pass}"/>
     </bean>
 
-    <bean id="amqpTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate" scope="prototype">
+    <bean id="amqpSendTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate" scope="prototype">
         <constructor-arg ref="amqpConnectionFactory" />
         <property name="routingKey" value="${rabbit.stat.update.queue}" />
-        <property name="queue" value="${rabbit.stat.update.queue}" />
+        <property name="exchange" value="statsExchange" />
         <property name="messageConverter" ref="jsonMessageConverter" />
     </bean>
 
@@ -37,22 +40,21 @@
 	</bean>
 
     <bean id="statUpdateQueue" class="org.springframework.amqp.core.Queue">
-        <constructor-arg value="${rabbit.stat.update.queue}" />
+        <constructor-arg ref="instanceId" />
     </bean>
 
     <bean id="amqpProducer" class="net.vijedi.messaging.rabbit.SpringAmqpProducer">
-        <property name="template" ref="amqpTemplate" />
+        <property name="template" ref="amqpSendTemplate" />
+        <property name="producerId" ref="instanceId" />
     </bean>
 
-    <bean id="amqpConsumer" class="net.vijedi.messaging.rabbit.SpringAmqpConsumer">
-        <property name="template" ref="amqpTemplate"/>
+    <bean id="statsMessageHandler" class="net.vijedi.messaging.rabbit.StatMessageUpdateHandler">
+        <property name="instanceId" ref="instanceId" />
     </bean>
-
-    <bean id="statsMessageHandler" class="net.vijedi.messaging.rabbit.StatMessageUpdateHandler" />
     
     <bean id="statsMessageConsumer" class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
         <property name="connectionFactory" ref="amqpConnectionFactory" />
-        <property name="queueName" value="${rabbit.stat.update.queue}" />
+        <property name="queueName" ref="instanceId" />
         <property name="messageListener">
             <bean class="org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter">
                 <property name="delegate" ref="statsMessageHandler"/>
