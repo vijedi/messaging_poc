@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans  xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:p="http://www.springframework.org/schema/p"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="ignoreResourceNotFound" value="false" />
+        <property name="locations">
+            <list>
+                <value>classpath:env.properties</value>
+                <!-- <value>file:${user.home}/.va/env-rabbit-poc.properties</value> -->
+            </list>
+        </property>
+    </bean>
+
+    <bean id="jsonMessageConverter" class="org.springframework.amqp.support.converter.JsonMessageConverter"/>
+
+    <bean id="amqpConnectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
+        <constructor-arg value="${rabbit.host}"/>
+        <property name="username" value="${rabbit.username}"/>
+        <property name="password" value="${rabbit.pass}"/>
+    </bean>
+
+    <bean id="amqpTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate" scope="prototype">
+        <constructor-arg ref="amqpConnectionFactory" />
+        <property name="routingKey" value="${rabbit.stat.update.queue}" />
+        <property name="queue" value="${rabbit.stat.update.queue}" />
+        <property name="messageConverter" ref="jsonMessageConverter" />
+    </bean>
+
+    <bean id="amqpAdmin" class="org.springframework.amqp.rabbit.core.RabbitAdmin">
+		<constructor-arg ref="amqpConnectionFactory"/>
+	</bean>
+
+    <bean id="statUpdateQueue" class="org.springframework.amqp.core.Queue">
+        <constructor-arg value="${rabbit.stat.update.queue}" />
+    </bean>
+
+    <bean id="amqpProducer" class="net.vijedi.messaging.rabbit.SpringAmqpProducer">
+        <property name="template" ref="amqpTemplate" />
+    </bean>
+
+    <bean id="amqpConsumer" class="net.vijedi.messaging.rabbit.SpringAmqpConsumer">
+        <property name="template" ref="amqpTemplate"/>
+    </bean>
+</beans>
