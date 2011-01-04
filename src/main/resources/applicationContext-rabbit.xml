@@ -7,27 +7,38 @@
         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
 
+    <!-- Get the rabbit configuration settings from the environment. This enables us to have
+       - configurations on different machines
+       -->
     <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="ignoreResourceNotFound" value="false" />
         <property name="locations">
             <list>
                 <value>classpath:env.properties</value>
-                <!-- <value>file:${user.home}/.va/env-rabbit-poc.properties</value> -->
             </list>
         </property>
     </bean>
 
+    <!-- Create an instanceID on startup. There should be one instance of the application -->
     <bean id="instanceUUID" class="java.util.UUID" factory-method="randomUUID" />
     <bean id="instanceId" factory-bean="instanceUUID" factory-method="toString" />
-    
+
+    <!-- Serialize messages to rabbit mq in json. This will allow other languages to participate in the messaging -->
     <bean id="jsonMessageConverter" class="org.springframework.amqp.support.converter.JsonMessageConverter"/>
 
+    <!-- Create an AMQP connection factory for communicating with the rabbit server.
+       - The location of the server, along with the authentication credentials are
+       - extracted from the properties file
+       -->
     <bean id="amqpConnectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
         <constructor-arg value="${rabbit.host}"/>
         <property name="username" value="${rabbit.username}"/>
         <property name="password" value="${rabbit.pass}"/>
     </bean>
 
+    <!-- Spring uses templates to abstract API differences. We use this template for the sender to easily convert
+       - the message without any rabbit specific code
+       -->
     <bean id="amqpSendTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate" scope="prototype">
         <constructor-arg ref="amqpConnectionFactory" />
         <property name="routingKey" value="${rabbit.stat.update.queue}" />
@@ -35,27 +46,33 @@
         <property name="messageConverter" ref="jsonMessageConverter" />
     </bean>
 
+    <!-- Administration bean used for creating exchanges and queues -->
     <bean id="amqpAdmin" class="org.springframework.amqp.rabbit.core.RabbitAdmin">
 		<constructor-arg ref="amqpConnectionFactory"/>
 	</bean>
 
+    <!-- The queue that will be used for communication. Each node needs to have it's own queue -->
     <bean id="statUpdateQueue" class="org.springframework.amqp.core.Queue">
         <constructor-arg ref="instanceId" />
     </bean>
 
-    <bean id="amqpProducer" class="net.vijedi.messaging.rabbit.SpringAmqpProducer">
+    <!-- Bean that will actually produce the messages -->
+    <bean id="amqpProducer" class="net.vijedi.messaging.rabbit.MessageProducer">
         <property name="template" ref="amqpSendTemplate" />
         <property name="producerId" ref="instanceId" />
     </bean>
 
+    <!-- Bean that will process the received the messages -->
     <bean id="statsMessageHandler" class="net.vijedi.messaging.rabbit.StatMessageUpdateHandler">
         <property name="instanceId" ref="instanceId" />
     </bean>
-    
+
+    <!-- Bean that will asynchronously receive messages being sent by the producers -->
     <bean id="statsMessageConsumer" class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
         <property name="connectionFactory" ref="amqpConnectionFactory" />
         <property name="queueName" ref="instanceId" />
         <property name="messageListener">
+            <!-- Use the MessageListenerAdapter to call our pre-defined handler -->
             <bean class="org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter">
                 <property name="delegate" ref="statsMessageHandler"/>
                 <property name="defaultListenerMethod" value="handleMessage"/>
@@ -64,12 +81,14 @@
         </property>
     </bean>
 
+    <!-- Create a reference to the pub-sub exchange used by the producers -->
     <bean id="statsExchange" class="org.springframework.amqp.core.FanoutExchange">
         <constructor-arg value="statsExchange" />
         <constructor-arg value="true" />
         <constructor-arg value="false" />
     </bean>
 
+    <!-- Bind the consumer queue to the exchange defined above -->
     <bean id="statsBinding" class="org.springframework.amqp.core.Binding">
         <constructor-arg ref="statUpdateQueue" />
         <constructor-arg ref="statsExchange" />

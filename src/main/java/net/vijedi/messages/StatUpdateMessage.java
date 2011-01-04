@@ -3,6 +3,11 @@ package net.vijedi.messages;
 /**
  * Author: Tejus Parikh
  * Date: 12/29/10 2:54 PM
+ *
+ * This is a simple statistics message used to communicate
+ * the number of success and attempts.
+ *
+ * It includes an optional text message for any additional information
  */
 public class StatUpdateMessage {
     private String senderId;
