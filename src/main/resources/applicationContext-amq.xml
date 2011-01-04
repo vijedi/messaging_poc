@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:jms="http://www.springframework.org/schema/jms"
+       xmlns:amq="http://activemq.apache.org/schema/core"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/jms
+                           http://www.springframework.org/schema/jms/spring-jms.xsd
+                           http://activemq.apache.org/schema/core
+                           http://activemq.apache.org/schema/core/activemq-core-5.4.2.xsd">
+
+    <!--  ActiveMQ Destination  -->
+    <amq:queue id="destination" physicalName="net.vijedi.statsupdate"/>
+
+    <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
+    <amq:connectionFactory id="jmsFactory" brokerURL="tcp://ubuntu-base:61616"/>
+
+    <!-- Create an instanceID on startup. There should be one instance of the application -->
+    <bean id="instanceUUID" class="java.util.UUID" factory-method="randomUUID"/>
+    <bean id="instanceId" factory-bean="instanceUUID" factory-method="toString"/>
+
+    <bean id="statMessageConverter" class="net.vijedi.messaging.jms.StatMessageConverter" />
+    
+    <!-- JMS Producer Configuration -->
+    <bean id="jmsProducerConnectionFactory"
+          class="org.springframework.jms.connection.SingleConnectionFactory"
+          p:targetConnectionFactory-ref="jmsFactory"/>
+
+    <bean id="jmsConsumerConnectionFactory"
+          class="org.springframework.jms.connection.SingleConnectionFactory"
+          p:targetConnectionFactory-ref="jmsFactory"/>
+
+    <bean id="jmsProducerTemplate" class="org.springframework.jms.core.JmsTemplate"
+          p:connectionFactory-ref="jmsProducerConnectionFactory"
+          p:defaultDestination-ref="destination"
+         p:messageConverter-ref="statMessageConverter" />
+
+    <bean id="producer" class="net.vijedi.messaging.jms.Producer"
+          p:template-ref="jmsProducerTemplate"
+         p:instanceId-ref="instanceId" />
+
+    <jms:listener-container container-type="default"
+                            connection-factory="jmsProducerConnectionFactory"
+                            acknowledge="auto">
+        <jms:listener destination="net.vijedi.statsupdate" ref="jmsMessageListener"/>
+    </jms:listener-container>
+
+    <bean id="jmsMessageListener" class="net.vijedi.messaging.jms.Consumer"
+            p:messageConverter-ref="statMessageConverter" />
+
+</beans>
