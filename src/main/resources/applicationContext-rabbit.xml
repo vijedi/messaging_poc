@@ -56,14 +56,19 @@
         <constructor-arg ref="instanceId" />
     </bean>
 
-    <!-- Bean that will actually produce the messages -->
-    <bean id="amqpProducer" class="net.vijedi.messaging.rabbit.MessageProducer">
+    <bean id="eventSender" class="net.vijedi.messaging.rabbit.AmqpEventSender">
         <property name="template" ref="amqpSendTemplate" />
+    </bean>
+    
+    <!-- Bean that will actually produce the messages -->
+    <bean id="eventProducer" class="net.vijedi.messaging.common.EventProducer">
+        <property name="eventSender" ref="eventSender" />
         <property name="producerId" ref="instanceId" />
     </bean>
 
-    <!-- Bean that will process the received the messages -->
-    <bean id="statsMessageHandler" class="net.vijedi.messaging.rabbit.StatMessageUpdateHandler">
+    <!-- Bean that will process the received the messages
+        - With amqp this can be any pojo -->
+    <bean id="statsMessageHandler" class="net.vijedi.messaging.common.StatMessageEventHandler">
         <property name="instanceId" ref="instanceId" />
     </bean>
 

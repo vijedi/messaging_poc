@@ -1,4 +1,4 @@
-package net.vijedi.messaging.rabbit;
+package net.vijedi.messaging.common;
 
 import net.vijedi.messages.StatUpdateMessage;
 import org.apache.commons.logging.Log;
@@ -12,9 +12,9 @@ import org.apache.commons.logging.LogFactory;
  * It is configured to work through Spring AMQP's
  * asynchronous messaging api.
  */
-public class StatMessageUpdateHandler {
+public class StatMessageEventHandler {
 
-    private static final Log log = LogFactory.getLog(StatMessageUpdateHandler.class);
+    private static final Log log = LogFactory.getLog(StatMessageEventHandler.class);
 
     private String instanceId;
 

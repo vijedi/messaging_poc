@@ -14,11 +14,27 @@
                            http://activemq.apache.org/schema/core
                            http://activemq.apache.org/schema/core/activemq-core-5.4.2.xsd">
 
-    <!--  ActiveMQ Destination  -->
-    <amq:queue id="destination" physicalName="net.vijedi.statsupdate"/>
+    <!-- Get the amq configuration settings from the environment. This enables us to have
+    - configurations on different machines
+    -->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="ignoreResourceNotFound" value="false"/>
+        <property name="locations">
+            <list>
+                <value>classpath:env.properties</value>
+            </list>
+        </property>
+    </bean>
 
-    <!-- JMS ConnectionFactory to use, configuring the embedded broker using XML -->
-    <amq:connectionFactory id="jmsFactory" brokerURL="tcp://ubuntu-base:61616"/>
+    <!--  ActiveMQ Destination  -->
+
+    <!-- We need to send to a topic -->
+    <bean id="statUpdateTopic" class="org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg value="${amq.topic}"/>
+    </bean>
+    
+    <!-- JMS ConnectionFactory to use, configuring using an environment property -->
+    <amq:connectionFactory id="jmsFactory" brokerURL="${amq.url}"/>
 
     <!-- Create an instanceID on startup. There should be one instance of the application -->
     <bean id="instanceUUID" class="java.util.UUID" factory-method="randomUUID"/>
@@ -26,7 +42,7 @@
 
     <bean id="statMessageConverter" class="net.vijedi.messaging.jms.StatMessageConverter" />
     
-    <!-- JMS Producer Configuration -->
+    <!-- JMS  Configuration -->
     <bean id="jmsProducerConnectionFactory"
           class="org.springframework.jms.connection.SingleConnectionFactory"
           p:targetConnectionFactory-ref="jmsFactory"/>
@@ -37,20 +53,31 @@
 
     <bean id="jmsProducerTemplate" class="org.springframework.jms.core.JmsTemplate"
           p:connectionFactory-ref="jmsProducerConnectionFactory"
-          p:defaultDestination-ref="destination"
+          p:defaultDestination-ref="statUpdateTopic"
          p:messageConverter-ref="statMessageConverter" />
 
-    <bean id="producer" class="net.vijedi.messaging.jms.Producer"
+    <bean id="eventProducer" class="net.vijedi.messaging.common.EventProducer">
+        <property name="eventSender" ref="eventSender"/>
+        <property name="producerId" ref="instanceId"/>
+    </bean>
+    
+    <bean id="eventSender" class="net.vijedi.messaging.jms.JmsEventSender"
           p:template-ref="jmsProducerTemplate"
-         p:instanceId-ref="instanceId" />
+         p:topic-ref="statUpdateTopic" />
 
     <jms:listener-container container-type="default"
                             connection-factory="jmsProducerConnectionFactory"
-                            acknowledge="auto">
-        <jms:listener destination="net.vijedi.statsupdate" ref="jmsMessageListener"/>
+                            cache="none"
+                            destination-type="topic">
+        <jms:listener destination="${amq.topic}" ref="jmsMessageListener"/>
     </jms:listener-container>
 
-    <bean id="jmsMessageListener" class="net.vijedi.messaging.jms.Consumer"
-            p:messageConverter-ref="statMessageConverter" />
+    <bean id="statsMessageHandler" class="net.vijedi.messaging.common.StatMessageEventHandler">
+        <property name="instanceId" ref="instanceId"/>
+    </bean>
+
+    <bean id="jmsMessageListener" class="net.vijedi.messaging.jms.JmsEventConsumer"
+            p:messageConverter-ref="statMessageConverter"
+            p:handler-ref="statsMessageHandler" />
 
 </beans>
