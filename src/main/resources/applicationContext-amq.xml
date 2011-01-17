@@ -42,19 +42,15 @@
 
     <bean id="statMessageConverter" class="net.vijedi.messaging.jms.StatMessageConverter" />
     
-    <!-- JMS  Configuration -->
-    <bean id="jmsProducerConnectionFactory"
-          class="org.springframework.jms.connection.SingleConnectionFactory"
-          p:targetConnectionFactory-ref="jmsFactory"/>
-
-    <bean id="jmsConsumerConnectionFactory"
+    <!-- JMS Producer Configuration -->
+    <bean id="jmsConnectionFactory"
           class="org.springframework.jms.connection.SingleConnectionFactory"
           p:targetConnectionFactory-ref="jmsFactory"/>
 
     <bean id="jmsProducerTemplate" class="org.springframework.jms.core.JmsTemplate"
-          p:connectionFactory-ref="jmsProducerConnectionFactory"
+          p:connectionFactory-ref="jmsConnectionFactory"
           p:defaultDestination-ref="statUpdateTopic"
-         p:messageConverter-ref="statMessageConverter" />
+          p:messageConverter-ref="statMessageConverter" />
 
     <bean id="eventProducer" class="net.vijedi.messaging.common.EventProducer">
         <property name="eventSender" ref="eventSender"/>
@@ -66,11 +62,9 @@
          p:topic-ref="statUpdateTopic" />
 
     <jms:listener-container container-type="default"
-                            connection-factory="jmsProducerConnectionFactory"
+                            connection-factory="jmsConnectionFactory"
                             cache="none"
-                            destination-type="topic">
-        <jms:listener destination="${amq.topic}" ref="jmsMessageListener"/>
-    </jms:listener-container>
+                            destination-type="topic">    </jms:listener-container>
 
     <bean id="statsMessageHandler" class="net.vijedi.messaging.common.StatMessageEventHandler">
         <property name="instanceId" ref="instanceId"/>
