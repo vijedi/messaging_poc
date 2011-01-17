@@ -2,7 +2,14 @@ This is a java messaging proof of concept. The
 goal was to compare how the api looks between 
 Spring3's AMQP support and its JMS support.
 
-Running the examples just requires changing the
+Running the examples  requires changing the
 env.properties files to point to the correct 
-broker. 
+broker. You will need a running rabbitmq
+and active mq server.
 
+You can run the examples by running either:
+net.vijedi.messaging.common.AmqpExample
+or
+net.vijedi.messaging.common.JmsExample
+
+Ê

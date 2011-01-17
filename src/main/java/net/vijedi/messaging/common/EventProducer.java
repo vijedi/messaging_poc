@@ -23,10 +23,8 @@ public class EventProducer {
     private String producerId;
     
     public void produce() {
-        int messageCount = 100000;
-        long millis = System.currentTimeMillis();
-        while (sequence < messageCount) {
-
+        
+        while(true) {
             // Create a simple message
             StatUpdateMessage message = new StatUpdateMessage(
                     producerId,
@@ -42,16 +40,13 @@ public class EventProducer {
                 log.info("Sent message: " + message);
             }
 
-//            try {
-//                Thread.sleep(MESSAGE_FREQUENCY);
-//            } catch (InterruptedException e) {
-//                log.warn("You bothered me while I was napping!");
-//            }
+            try {
+                Thread.sleep(MESSAGE_FREQUENCY);
+            } catch (InterruptedException e) {
+                log.warn("You bothered me while I was napping!");
+            }
         }
 
-        long finishMillis = System.currentTimeMillis();
-
-        System.out.println("Sent " + messageCount + " messages in " + (finishMillis - millis) + " milliseconds");
     }
 
     public void setEventSender(EventSender<StatUpdateMessage> eventSender) {
